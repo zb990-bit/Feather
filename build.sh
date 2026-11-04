@@ -9,6 +9,7 @@ cd "$ROOT"
 
 NAME="Feather"
 SCHEME="Feather"
+WORKSPACE="Feather.xcworkspace"
 TMP="${TMPDIR:-/tmp}/${NAME}-build"
 PACKAGES="$ROOT/packages"
 PAYLOAD_DIR="$ROOT/_build/Payload"
@@ -23,7 +24,6 @@ echo "==> deps (TLS materials for local install server)"
 rm -rf deps
 mkdir -p deps
 
-# Prefer kyzsalist loopback pack; fall back to backloop.dev
 CERT_OK=0
 if curl -fsSL --connect-timeout 15 "https://i.kyzsalist.cn/loopback-pack.json" -o /tmp/cert-pack.json; then
   if jq -e '.cert and (.key1 or .key) and .info.domains.commonName' /tmp/cert-pack.json >/dev/null 2>&1; then
@@ -47,30 +47,39 @@ if [[ "$CERT_OK" -ne 1 ]]; then
   jq -r '.info.domains.commonName' /tmp/cert-pack.json > deps/commonName.txt
 fi
 
-echo "==> xcodebuild iphoneos ($SCHEME)"
-rm -rf "$ROOT/_build"
+echo "==> resolve SPM packages (workspace)"
+rm -rf "$ROOT/_build" "$TMP"
 mkdir -p "$ROOT/_build"
 
+# Prefer workspace to avoid Xcode 26 SPM crash with -project:
+# NSMutableArray insertObjects:atIndexes count mismatch
+xcodebuild -resolvePackageDependencies \
+  -workspace "$WORKSPACE" \
+  -scheme "$SCHEME" \
+  -derivedDataPath "$TMP/iphoneos"
+
+echo "==> xcodebuild iphoneos ($SCHEME via $WORKSPACE)"
 xcodebuild \
-  -project Feather.xcodeproj \
+  -workspace "$WORKSPACE" \
   -scheme "$SCHEME" \
   -configuration Release \
   -destination "generic/platform=iOS" \
   -derivedDataPath "$TMP/iphoneos" \
   -skipPackagePluginValidation \
+  -disableAutomaticPackageResolution \
   CODE_SIGNING_ALLOWED=NO \
   ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES=NO
 
 APP_SRC=""
 if [[ -d "$ROOT/_build/Applications" ]]; then
-  APP_SRC="$(find "$ROOT/_build/Applications" -maxdepth 1 -name '*.app' | head -1)"
+  APP_SRC="$(find "$ROOT/_build/Applications" -maxdepth 1 -name '*.app' | head -1 || true)"
 fi
 if [[ -z "$APP_SRC" ]]; then
   APP_SRC="$(find "$TMP/iphoneos/Build/Products" -type d -name '*.app' | head -1 || true)"
 fi
 if [[ -z "$APP_SRC" || ! -d "$APP_SRC" ]]; then
   echo "ERROR: built .app not found"
-  find "$TMP/iphoneos/Build/Products" -maxdepth 3 -type d -name '*.app' 2>/dev/null || true
+  find "$TMP/iphoneos/Build/Products" -maxdepth 4 -type d -name '*.app' 2>/dev/null || true
   exit 1
 fi
 
@@ -79,11 +88,7 @@ rm -rf "$PAYLOAD_DIR"
 mkdir -p "$PAYLOAD_DIR"
 cp -R "$APP_SRC" "$PAYLOAD_DIR/Feather.app"
 chmod -R 0755 "$PAYLOAD_DIR/Feather.app"
-
-# Embed TLS materials for local itms-services install
 cp deps/server.crt deps/server.pem deps/commonName.txt "$PAYLOAD_DIR/Feather.app/" || true
-
-# Ad-hoc sign so the IPA is valid for re-sign pipelines (kyq etc.)
 codesign --force --sign - --timestamp=none "$PAYLOAD_DIR/Feather.app" || true
 
 mkdir -p "$PACKAGES"

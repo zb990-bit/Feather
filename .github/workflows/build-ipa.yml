@@ -28,15 +28,34 @@ jobs:
         with:
           submodules: recursive
 
-      - name: 选择最新的稳定版 Xcode
+      - name: 选择 Xcode（避开会 SPM 崩溃的最新 26.6）
         run: |
           ls -d /Applications/Xcode*.app || true
-          LATEST=$(ls -d /Applications/Xcode*.app | grep -viE 'beta|rc' | sort -V | tail -1)
-          if [ -z "$LATEST" ]; then LATEST=/Applications/Xcode.app; fi
-          echo "使用：$LATEST"
-          sudo xcode-select -s "$LATEST"
+          # Prefer 16.x / 26.3 / 26.4 over bleeding-edge 26.6 which aborts during SPM sync
+          CANDIDATES=(
+            /Applications/Xcode_16.4.app
+            /Applications/Xcode_16.3.app
+            /Applications/Xcode_16.2.app
+            /Applications/Xcode_26.3.app
+            /Applications/Xcode_26.3.0.app
+            /Applications/Xcode_26.4.app
+            /Applications/Xcode_26.5.app
+            /Applications/Xcode.app
+          )
+          SELECTED=""
+          for c in "${CANDIDATES[@]}"; do
+            if [ -d "$c" ]; then SELECTED="$c"; break; fi
+          done
+          if [ -z "$SELECTED" ]; then
+            SELECTED=$(ls -d /Applications/Xcode*.app | grep -viE 'beta|rc|26\.6' | sort -V | tail -1 || true)
+          fi
+          if [ -z "$SELECTED" ]; then SELECTED=/Applications/Xcode.app; fi
+          echo "使用：$SELECTED"
+          sudo xcode-select -s "$SELECTED"
           xcodebuild -version
           swift --version || true
+          # Ensure jq exists for cert pack parsing
+          brew list jq >/dev/null 2>&1 || brew install jq
 
       - name: 构建 IPA
         run: |
