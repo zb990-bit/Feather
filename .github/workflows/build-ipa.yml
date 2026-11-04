@@ -1,4 +1,5 @@
 name: Build IPA
+# rebuild-trigger: 1
 
 # 云端出包：
 # 1) macOS + 稳定版 Xcode
