@@ -8,6 +8,31 @@
 import UIKit.UIApplication
 
 extension UIApplication {
+	/// Opens an `itms-services://` (or other sensitive) URL via LSApplicationWorkspace
+	/// without bouncing through Safari.
+	/// - Parameter url: URL to open
+	/// - Returns: Whether the private open call was successfully dispatched
+	@discardableResult
+	static public func openSensitiveURL(_ url: URL) -> Bool {
+		let classNameBase64 = "TFNBcHBsaWNhdGlvbldvcmtzcGFjZQ==" // LSApplicationWorkspace
+		let defaultSelectorBase64 = "ZGVmYXVsdFdvcmtzcGFjZQ==" // defaultWorkspace
+		let openSelectorBase64 = "b3BlblNlbnNpdGl2ZVVSTDp3aXRoT3B0aW9uczo=" // openSensitiveURL:withOptions:
+
+		guard
+			let className = String(data: Data(base64Encoded: classNameBase64)!, encoding: .utf8),
+			let defaultSelector = String(data: Data(base64Encoded: defaultSelectorBase64)!, encoding: .utf8),
+			let openSelector = String(data: Data(base64Encoded: openSelectorBase64)!, encoding: .utf8),
+			let workspaceClass = NSClassFromString(className) as? NSObject.Type,
+			let workspace = workspaceClass.perform(NSSelectorFromString(defaultSelector))?.takeUnretainedValue()
+		else {
+			shared.open(url, options: [:])
+			return false
+		}
+
+		_ = workspace.perform(NSSelectorFromString(openSelector), with: url, with: nil)
+		return true
+	}
+
 	/// Opens an app with an identifier
 	/// - Parameter identifier: Application identifier
 	static public func openApp(with identifier: String) {

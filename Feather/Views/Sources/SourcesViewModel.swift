@@ -8,15 +8,12 @@
 import Foundation
 import AltSourceKit
 import SwiftUI
-import NimbleJSON
 
 // MARK: - Class
 final class SourcesViewModel: ObservableObject {
 	static let shared = SourcesViewModel()
 	
 	typealias RepositoryDataHandler = Result<ASRepository, Error>
-	
-	private let _dataService = NBFetchService()
 	
 	var isFinished = true
 	@Published var sources: [AltSource: ASRepository] = [:]
@@ -50,7 +47,7 @@ final class SourcesViewModel: ObservableObject {
 						}
 						
 						return await withCheckedContinuation { continuation in
-							self._dataService.fetch(from: url) { (result: RepositoryDataHandler) in
+							ASRepositoryLoader.load(from: url) { (result: RepositoryDataHandler) in
 								switch result {
 								case .success(let repo):
 									continuation.resume(returning: (source, repo))

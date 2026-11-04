@@ -45,19 +45,14 @@ public struct ASRepository: Sendable, Decodable, Hashable, Identifiable {
 			String.self,
 			forKey: .subtitle
 		)
-		self.description = try container.decodeIfPresent(
-			String.self,
-			forKey: .description
-		)
-		self.website = try container.decodeIfPresent(URL.self, forKey: .website)
-		self.iconURL = try container.decodeIfPresent(
-			URL.self,
-			forKey: .iconURL
-		)
-		self.headerURL = try container.decodeIfPresent(
-			URL.self,
-			forKey: .headerURL
-		)
+		self.description =
+			try container.decodeIfPresent(String.self, forKey: .description)
+			?? try container.decodeIfPresent(String.self, forKey: .message)
+		self.website = Self.decodeOptionalURL(container, forKey: .website)
+		self.iconURL =
+			Self.decodeOptionalURL(container, forKey: .iconURL)
+			?? Self.decodeOptionalURL(container, forKey: .sourceicon)
+		self.headerURL = Self.decodeOptionalURL(container, forKey: .headerURL)
 		self.tintColor =
 			try container.decodeIfPresent(Color.self, forKey: .tintColor)
 
@@ -104,15 +99,29 @@ public struct ASRepository: Sendable, Decodable, Hashable, Identifiable {
 		case name,
 		     subtitle,
 		     description,
+		     message,
 		     website,
 		     patreonURL,
 		     userInfo,
 		     iconURL,
+		     sourceicon,
 		     headerURL,
 		     tintColor,
 		     apps,
 		     featuredApps,
 		     news
+	}
+
+	static func decodeOptionalURL<K: CodingKey>(
+		_ container: KeyedDecodingContainer<K>,
+		forKey key: K
+	) -> URL? {
+		if let string = try? container.decodeIfPresent(String.self, forKey: key) {
+			let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+			guard !trimmed.isEmpty else { return nil }
+			return URL(string: trimmed)
+		}
+		return try? container.decodeIfPresent(URL.self, forKey: key)
 	}
 	
 	public var currentIconURL: URL? {
@@ -211,8 +220,10 @@ extension ASRepository {
 
 		public init(from decoder: any Decoder) throws {
 			let container = try decoder.container(keyedBy: CodingKeys.self)
-			self.id = try container.decodeIfPresent(String.self, forKey: .id)
 			self.name = try container.decodeIfPresent(String.self, forKey: .name)
+			self.id =
+				try container.decodeIfPresent(String.self, forKey: .id)
+				?? self.name
 
 			self.subtitle = try container.decodeIfPresent(
 				String.self,
@@ -250,7 +261,7 @@ extension ASRepository {
 				forKey: .versionDescription
 			)
 
-			self.downloadURL = try container.decodeIfPresent(URL.self, forKey: .downloadURL)
+			self.downloadURL = ASRepository.decodeOptionalURL(container, forKey: .downloadURL)
 
 			self.localizedDescription =
 				try container.decodeIfPresent(
@@ -258,10 +269,16 @@ extension ASRepository {
 					forKey: .localizedDescription
 				)
 
-			self.iconURL = try container.decode(URL.self, forKey: .iconURL)
+			self.iconURL = ASRepository.decodeOptionalURL(container, forKey: .iconURL)
 
-			self.tintColor =
-				try container.decodeIfPresent(Color.self, forKey: .tintColor)
+			if
+				let tint = try container.decodeIfPresent(String.self, forKey: .tintColor),
+				!tint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+			{
+				self.tintColor = Color(hex: tint)
+			} else {
+				self.tintColor = nil
+			}
 
 			self.size =
 				(try? container.decodeIfPresent(Int64.self, forKey: .size))

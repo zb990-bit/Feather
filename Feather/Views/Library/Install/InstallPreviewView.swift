@@ -17,7 +17,6 @@ struct InstallPreviewView: View {
 	@AppStorage("Feather.useShareSheetForArchiving") private var _useShareSheet: Bool = false
 	@AppStorage("Feather.installationMethod") private var _installationMethod: Int = 0
 	@AppStorage("Feather.serverMethod") private var _serverMethod: Int = 0
-	@State private var _isWebviewPresenting = false
 	@State private var progressTask: Task<Void, Never>?
 	
 	var app: AppInfoPresentable
@@ -53,21 +52,17 @@ struct InstallPreviewView: View {
 		.background(Color(UIColor.secondarySystemBackground))
 		.cornerRadius(cornerRadius)
 		.padding()
-		.sheet(isPresented: $_isWebviewPresenting) {
-			SafariRepresentableView(url: installer.pageEndpoint).ignoresSafeArea()
-		}
 		.onReceive(viewModel.$status) { newStatus in
 			if _installationMethod == 0 {
 				if case .ready = newStatus {
-					if _serverMethod == 0 {
-						UIApplication.shared.open(URL(string: installer.iTunesLink)!)
-					} else if _serverMethod == 1 {
-						_isWebviewPresenting = true
+					// Keep existing local / genPlist endpoints; invoke itms-services
+					// via LSApplicationWorkspace so Safari is not presented.
+					let link = _serverMethod == 1
+						? installer.iTunesLinkExternal
+						: installer.iTunesLink
+					if let url = URL(string: link) {
+						UIApplication.openSensitiveURL(url)
 					}
-				}
-				
-				if case .sendingPayload = newStatus, _serverMethod == 1 {
-					_isWebviewPresenting = false
 				}
 				
 				if case .installing = newStatus {

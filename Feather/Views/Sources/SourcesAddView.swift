@@ -8,7 +8,6 @@
 import SwiftUI
 import NimbleViews
 import AltSourceKit
-import NimbleJSON
 import OSLog
 import UIKit.UIImpactFeedbackGenerator
 
@@ -16,8 +15,6 @@ import UIKit.UIImpactFeedbackGenerator
 struct SourcesAddView: View {
 	typealias RepositoryDataHandler = Result<ASRepository, Error>
 	@Environment(\.dismiss) var dismiss
-
-	private let _dataService = NBFetchService()
 	
 	@State private var _filteredRecommendedSourcesData: [(url: URL, data: ASRepository)] = []
 	private func _refreshFilteredRecommendedSourcesData() {
@@ -65,8 +62,7 @@ struct SourcesAddView: View {
 						.keyboardType(.URL)
 						.textInputAutocapitalization(.never)
 				} footer: {
-					Text(.localized("The only supported repositories are AltStore repositories."))
-					Text(verbatim: "[\(String.localized("Learn more about how to setup a repository..."))](https://faq.altstore.io/developers/make-a-source)")
+					Text(.localized("Supports AltStore repositories and encrypted sources (appstore / appstore_v1)."))
 				}
 				
 				Section {
@@ -118,8 +114,6 @@ struct SourcesAddView: View {
 								}
 							}
 						}
-					} footer: {
-						Text(.localized("Open an [issue](https://github.com/claration/Feather/issues) on GitHub if you want your source to be featured."))
 					}
 				}
 			}
@@ -186,13 +180,11 @@ struct SourcesAddView: View {
 	) async -> [(url: URL, data: ASRepository)] {
 		var results: [(url: URL, data: ASRepository)] = []
 		
-		let dataService = _dataService
-		
 		await withTaskGroup(of: Void.self) { group in
 			for url in urls {
 				group.addTask {
 					await withCheckedContinuation { continuation in
-						dataService.fetch<ASRepository>(from: url) { (result: RepositoryDataHandler) in
+						ASRepositoryLoader.load(from: url) { (result: RepositoryDataHandler) in
 							switch result {
 							case .success(let repo):
 								Task { @MainActor in

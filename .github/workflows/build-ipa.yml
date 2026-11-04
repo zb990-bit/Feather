@@ -1,0 +1,83 @@
+name: Build IPA
+
+# 云端出包：
+# 1) macOS + 稳定版 Xcode
+# 2) ./build.sh → packages/Feather.ipa
+# 3) 推到 build-artifacts，并上传 artifact
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: build-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 选择最新的稳定版 Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          LATEST=$(ls -d /Applications/Xcode*.app | grep -viE 'beta|rc' | sort -V | tail -1)
+          if [ -z "$LATEST" ]; then LATEST=/Applications/Xcode.app; fi
+          echo "使用：$LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+          swift --version || true
+
+      - name: 构建 IPA
+        run: |
+          chmod +x build.sh
+          ./build.sh
+          test -f packages/Feather.ipa
+          ls -lh packages/Feather.ipa
+
+      - name: 发布 IPA 到 build-artifacts 分支
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cp "packages/Feather.ipa" "/tmp/Feather-${SOURCE_SHA}.ipa"
+          cp "packages/Feather.ipa" "/tmp/Feather-latest.ipa"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin build-artifacts >/dev/null 2>&1; then
+            git fetch origin build-artifacts
+            git checkout -B build-artifacts origin/build-artifacts
+          else
+            git checkout --orphan build-artifacts
+          fi
+
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          mkdir -p artifacts
+          cp "/tmp/Feather-${SOURCE_SHA}.ipa" "artifacts/Feather-${SOURCE_SHA}.ipa"
+          cp "/tmp/Feather-latest.ipa" "artifacts/Feather-latest.ipa"
+          printf '%s\n' "${SOURCE_SHA}" > "artifacts/latest-sha.txt"
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > "artifacts/built-at.txt"
+
+          git add artifacts
+          git commit -m "Update IPA for ${SOURCE_SHA}" || echo "No artifact changes to commit"
+          git push origin build-artifacts
+
+      - name: 上传 IPA 产物
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: Feather-IPA
+          path: /tmp/Feather-latest.ipa
+          if-no-files-found: warn
+          retention-days: 14

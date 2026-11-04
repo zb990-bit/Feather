@@ -1,0 +1,40 @@
+//
+//  ASAppStoreV1PrivateKey.swift
+//  AltSourceKit
+//
+//  Package-local RSA private key used by appstore_v1 chunk decryption.
+//
+
+import Foundation
+
+enum ASAppStoreV1PrivateKey {
+	static let pem = """
+	-----BEGIN RSA PRIVATE KEY-----
+	MIIEpAIBAAKCAQEAkW2mfZddF15yPY1ZCtcXY7A9IKxQusdxVQi4nhgsEsnbyuNq
+	L6hkFpGbyOzy0aQyh3eWawZzQCqh1XmWxauDUGPgg/+tEsxJvaZCOvDLOxqCGtQg
+	meMrgB2dL3cmXjNu9rG4Zi8G2OmIjkxbp6EriVpXLy7q0/REIwEBKoKqlmkl4LQu
+	jfKSVo7jY+Mgd1TPrQVCQVoDcDrdVldmOYsPKkt2wKLo0cmr0eLhVNwHFvV5cQGl
+	UUM+qrF7Zbcf4V++ute9Owhk4Obvs+R9niHIT1cBMlDmVoc4B4z+LEUOUp9UlKXl
+	/6OYygcgLKZH8rkZhTZWKVHoDW0euVpVKqmsfwIDAQABAoIBAAC0t/ytL1gq6Fw6
+	As4w/vsG+hePyjudvSkJsCoJyepWJQkMHb5spjJfcTvNNSi1gvSAJoY0L6aTjdwL
+	uA8xqq3/iI7d6lLlxgB5J9H6bKAX8uPiBo4L7smokEuBZJpCyAtkGEF8wpia1rAr
+	s/SaDvpxI+HUWnt6/pUIrer270KGv14mUm01m2AaMpXpbvcr1lEYU4Vg8qs779IX
+	qv8ujyMdvFnGEdKmejr7hy8oWrvJD69iYf4wj7NpRl4SDW3HaKlwAuy40j3RnjFi
+	aTghgjmlKkTMRwt7yXbH4KQ36g82EobPazW75djozPqhtt2koUKQBF72GdlkISYJ
+	Yx95SW0CgYEAwZsmYNb53oHgGfiwbw0zABEeYtvRmGG86xdOA1WensTUW5ZhHScr
+	OPUpZCjCB5N2yBljc0iwa1XdWKK367LoZlmvSesPQQw+XFfplm9xVH+67RalWJWC
+	/9J7iSL0vOcudAmX57IIsSA8X9nL2J26tgjXKOb1w3zuPkGRgI/fRl0CgYEAwEvA
+	EFZRZdZga/97LLeFxK8dCSpNdzExjpoz/Arb+ODvAd0YpoAI12T7qxbM2p+IF+la
+	KOzzloCcAu+5BG4dRa5dvYaxfSSfPKx9fU8RvYXO0TeiUuHFFBPF5AJXFaP97Qre
+	wilAfKtSv5SFK/lQloFIsQ0dZfvxCCWZrJxQ2IsCgYAusLj/r7iQxaeC++uozHkZ
+	Mgeu9a5FXoTN+U/SFArt5TAFam2/NxwAX3d89Std4l1KAn1uZwBM0mdQIeXTDNFp
+	JYXVgL+sA0TixjzKD9Q3+Znd5ZE4nM373gn215xIFkSorUuaD+ByvwBwaTj0440M
+	q3MgJRrt6yoVj4CEja3d7QKBgQCPypUOIl2vlwR2/Y2vvHPsxT0jE1zl2gVCqxBg
+	UgZ3LkvKyveZ2XfDCSIfp2b7u/taVgYzQCxNyFHg6D0jkOuWpXI3PLcP6wifqCQW
+	Rb/wRlSGoeFhtK1X/AkoHI/eAMjqLgywh4RPNRUlaPvEDCQ0xuwCaNoo3qI4A1XM
+	ev8BTQKBgQCi+i276LWY47fLEsBliynQPs5Y7Q3EB9Of7luQGFeVyuSm62QVViIt
+	d15pO6nnEju6esBXgAQUk+NqN+KEModpfoPqhW+nAuejocFyS9No/4F5sw5n6Zx9
+	kBA0gtVlDhmWa9XeB88JexZ4NnrK8DrXoGjnctwE7xHOO4QpFZOpqQ==
+	-----END RSA PRIVATE KEY-----
+	"""
+}
